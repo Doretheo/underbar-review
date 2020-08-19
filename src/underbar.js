@@ -102,7 +102,7 @@
   // Produce a duplicate-free version of the array.
   _.uniq = function(array, isSorted, iterator) {
     var iterated = [];
-    if (arguments.length >= 2) {
+    if (arguments.length === 3) {
       _.each(array, function (item) {
         iterated.push(iterator(item));
       });
@@ -197,12 +197,29 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
+    if (iterator === undefined) {
+      iterator = _.identity;
+    }
+
+    return _.reduce(collection, function(elements, item) {
+      if (!iterator(item)) {
+        return false;
+      }
+      return elements;
+    }, true);
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+    if (iterator === undefined) {
+      iterator = _.identity;
+    }
+
+    return !_.every(collection, function(item) {
+      return !iterator(item);
+    });
   };
 
 
@@ -225,11 +242,25 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    _.each(arguments, function (property) {
+      _.each(property, function (value, key) {
+        obj[key] = value;
+      });
+    });
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    _.each(arguments, function (property) {
+      _.each(property, function (value, key) {
+        if (obj[key] === undefined) {
+          obj[key] = value;
+        }
+      });
+    });
+    return obj;
   };
 
 
@@ -273,6 +304,14 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    // iterates over arguments and takes a function of
+    var unique = {};
+
+    return function() {
+      var key = JSON.stringify(arguments);
+
+      return unique[key] = unique[key] || func.apply(this, arguments);
+    };
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -282,13 +321,12 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    var afterArgs = Array.prototype.slice.call(arguments, 2);
+
+    return setTimeout( function() {
+      return func.apply(null, afterArgs);
+    }, wait);
   };
-
-
-  /**
-   * ADVANCED COLLECTION OPERATIONS
-   * ==============================
-   */
 
   // Randomizes the order of an array's contents.
   //
@@ -296,44 +334,23 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
+    var newArray = array.slice(); // [1,2,3,4,5,6] --> [1,5,3,4,2]
+
+    _.each(newArray, function(item, index) {
+      let replacement = Math.floor(Math.random() * index); // index = 1, randomNum = 4 .... replacement = 4
+
+      let newNum = newArray[replacement]; // newNum = 5, index = 4
+      newArray[replacement] = newArray[index]; // 5 --> 2
+      newArray[index] = newNum; // 2 --> 5
+    });
+
+    return newArray;
   };
 
-
-  /**
-   * ADVANCED
-   * =================
-   *
-   * Note: This is the end of the pre-course curriculum. Feel free to continue,
-   * but nothing beyond here is required.
-   */
-
-  // Calls the method named by functionOrKey on each value in the list.
-  // Note: You will need to learn a bit about .apply to complete this.
-  _.invoke = function(collection, functionOrKey, args) {
-  };
-
-  // Sort the object's values by a criterion produced by an iterator.
-  // If iterator is a string, sort objects by that property with the name
-  // of that string. For example, _.sortBy(people, 'name') should sort
-  // an array of people by their name.
-  _.sortBy = function(collection, iterator) {
-  };
-
-  // Zip together two or more arrays with elements of the same index
-  // going together.
-  //
-  // Example:
-  // _.zip(['a','b','c','d'], [1,2,3]) returns [['a',1], ['b',2], ['c',3], ['d',undefined]]
-  _.zip = function() {
-  };
 
   // Takes a multidimensional array and converts it to a one-dimensional array.
   // The new array should contain all elements of the multidimensional array.
   //
-  // Hint: Use Array.isArray to check if something is an array
-  _.flatten = function(nestedArray, result) {
-  };
-
   // Takes an arbitrary number of arrays and produces an array that contains
   // every item shared between all the passed-in arrays.
   _.intersection = function() {
